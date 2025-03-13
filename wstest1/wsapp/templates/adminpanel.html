@@ -170,7 +170,9 @@
                     <label for="room_id">Select Room to Delete:</label>
                     <select name="room_id">
                         {% for room in rooms %}
+                        {% if room.roomtype == 'group' %}
                         <option value="{{ room.id }}">{{ room.name }}</option>
+                        {% endif %}
                         {% endfor %}
                     </select>
                     <button type="submit" name="delete_room" class="btn btn-danger">Delete Room</button>

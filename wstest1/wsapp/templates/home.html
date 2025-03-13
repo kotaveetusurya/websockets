@@ -35,7 +35,6 @@
 
 
     #chat_section {
-
         padding: 10px;
         border: 1px solid #ccc;
         border-radius: 8px;
@@ -45,27 +44,33 @@
 
     /* ===================================message css======================================= */
     #chat-log {
-        width: 100%;
+        width: 80%;
         max-height: 75%;
         overflow-y: auto;
         padding: 10px;
+        border: 1px solid #ccc;
         border-radius: 8px;
+        scrollbar-width: none;
+        /* Hide the scrollbar in Firefox */
+        -ms-overflow-style: none;
+        /* Hide the scrollbar in Internet Explorer and Edge */
+    }
+
+    #onlineusers {
+        width: 20%;
+        max-height: 75%;
+        overflow-y: auto;
+        padding: 10px;
+        margin: 0 5px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: none;
     }
 
     /* Hide the scrollbar in WebKit browsers (Chrome, Safari, etc.) */
     #chat-log::-webkit-scrollbar {
         width: 0px;
         height: 0px;
-    }
-
-    /* Hide the scrollbar in Firefox */
-    #chat-log {
-        scrollbar-width: none;
-    }
-
-    /* Hide the scrollbar in Internet Explorer and Edge */
-    #chat-log {
-        -ms-overflow-style: none;
     }
 
     .chat-message {
@@ -129,11 +134,12 @@
         border-radius: 8px;
         background-color: rgba(0, 0, 0, 0.05);
     }
+
     #user_chat {
         transition: all 0.3s ease-in-out;
     }
 
-    #user_chat:hover{
+    #user_chat:hover {
         transform: scale(1.3);
         color: red;
     }
@@ -243,7 +249,9 @@
         <div id="rooms" class="col-md-3">
             <div class="heading d-flex justify-content-between align-items-center">
                 <h2 style="color: blueviolet; font-weight: bold;">Rooms</h2>
-                <a id="user_chat" href="{% url 'userchat' %}" style="margin: 10px;color: blueviolet;text-decoration: none;font-size: large;"><i class="fa-solid fa-user"></i></a>
+                <a id="user_chat" href="{% url 'userchat' %}"
+                    style="margin: 10px;color: blueviolet;text-decoration: none;font-size: large;"><i
+                        class="fa-solid fa-user"></i></a>
             </div>
 
             <!-- Display chat rooms here -->
@@ -275,7 +283,7 @@
         </div>
         <div id="chat_section" class="col-md-9">
             <!-- roomname & online user count -->
-            <div class="d-flex justify-content-between align-items-center">
+            <div class="justify-content-between align-items-center" id="group_heading" style="display: none;">
                 <h2 id="room_name" style="color: blueviolet; font-weight: bold;"></h2>
                 <h3 style="color: blueviolet;font-size: medium;">Online Users:<span id="online-users-count">0</span>
                 </h3>
@@ -286,10 +294,15 @@
                 <button class="btn" style="background-color: blueviolet;color: white;" type="submit">Send</button>
             </form>
 
-            <!-- Display chat messages -->
-            <div id="chat-log">
-                <h3 style="color: blueviolet;font-weight: bold;">All Chat</h3>
-                <!-- Display chat messages here -->
+            <div class="d-flex" style="width: 100%;max-height: 75%;">
+                <!-- Display chat messages -->
+                <div id="chat-log">
+                    <h3 style="color: blueviolet;font-weight: bold;">Select any Room to start chatting......!</h3>
+                    <!-- Display chat messages here -->
+                </div>
+                <div id="onlineusers">
+
+                </div>
             </div>
         </div>
     </div>
@@ -347,8 +360,24 @@
 
             // Handle connection success (update unread count and online users count)
             if (message.type === 'connection_success') {
+                console.log('onlineuses', message.online_users)
                 document.getElementById(`unread-count-${message.slug}`).textContent = message.unread_count['{{ user.username }}'];
                 document.getElementById('online-users-count').textContent = message.online_users_count;
+                // Clear the existing list (optional: in case you want to refresh the list)
+                document.getElementById('onlineusers').innerHTML = '';
+
+                // Loop through each user and create an element for them
+                message.online_users.forEach(user => {
+                    // Create a new div for each user
+                    const userDiv = document.createElement('div');
+                    userDiv.classList.add('online-user');  // You can add a class for styling
+
+                    // Set the content of the user div
+                    userDiv.textContent = user;
+
+                    // Append the user div to the onlineusers div
+                    document.getElementById('onlineusers').appendChild(userDiv);
+                });
             }
 
             // Handle receiving chat messages
@@ -416,11 +445,14 @@
             .then(data => {
                 // display entire room details like room name, chat field, and messages container 
                 document.getElementById('room_name').textContent = data.room.name;
+                document.getElementById('group_heading').style.display = 'flex';
                 document.getElementById('form').style.display = 'flex';
 
                 // Clear the chat log before inserting new messages
                 document.getElementById('chat-log').innerHTML = '';
 
+                // inserting the All chat heading for the room
+                document.getElementById('chat-log').insertAdjacentHTML('beforeend', `<h3 style="color: blueviolet;font-weight: bold;">All Chat</h3>`)
                 // Insert the new messages at the end of the chat log
                 if (data.messages.length > 0) {
                     data.messages.forEach(message => {

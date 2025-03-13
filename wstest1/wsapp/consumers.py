@@ -37,6 +37,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         unread_count_dict = await self.get_unread_count_for_all_disconnected_users(self.room_slug)
 
         print('unread messages dict', unread_count_dict)
+        print('online users list', list(CONNECTED_USERS[self.room_slug]),)
 
         # Send the unread count as a JSON response
         await self.send(text_data=json.dumps({
@@ -44,6 +45,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'slug': self.room_slug,
             'unread_count_dict': unread_count_dict,  # Awaited result of the function
             'unread_count': 0,
+            'online_users': list(CONNECTED_USERS[self.room_slug]),
             'online_users_count': len(CONNECTED_USERS[self.room_slug])
         }))
 
