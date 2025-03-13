@@ -1,0 +1,476 @@
+<!-- templates/home.html-->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}GroupChat{% endblock %}
+
+{% block content %}
+<style>
+    body {
+        background: url({% static 'chatbg2.jpg' %}) no-repeat center center / cover;
+        color: #fff;
+        height: 100vh;
+    }
+
+    /* ==========================main section CSS=========================================== */
+    #main-section {
+        position: relative;
+        top: 100px;
+        left: 0;
+        padding: 20px;
+        background: none;
+        border-radius: 10px;
+        width: 100%;
+        /* height: 80vh; */
+        margin: 0 auto;
+
+    }
+
+    .content_holder {
+        display: flex;
+        justify-content: center;
+        height: 500px;
+        gap: 10px;
+    }
+
+
+    #chat_section {
+
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: none;
+    }
+
+
+    /* ===================================message css======================================= */
+    #chat-log {
+        width: 100%;
+        max-height: 75%;
+        overflow-y: auto;
+        padding: 10px;
+        border-radius: 8px;
+    }
+
+    /* Hide the scrollbar in WebKit browsers (Chrome, Safari, etc.) */
+    #chat-log::-webkit-scrollbar {
+        width: 0px;
+        height: 0px;
+    }
+
+    /* Hide the scrollbar in Firefox */
+    #chat-log {
+        scrollbar-width: none;
+    }
+
+    /* Hide the scrollbar in Internet Explorer and Edge */
+    #chat-log {
+        -ms-overflow-style: none;
+    }
+
+    .chat-message {
+        display: flex;
+        align-items: center;
+        background-color: #2d3e50;
+        color: white;
+        border-radius: 15px;
+        margin: 10px 0;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        max-width: 80%;
+        animation: fadeIn 0.5s ease-out;
+        clear: both;
+    }
+
+    /* User's message (current user) aligned to the right */
+    .chat-message.current-user {
+        background-color: blueviolet;
+        margin-left: auto;
+        margin-right: 0;
+    }
+
+    /* Other user's message aligned to the left */
+    .chat-message.other-user {
+        background-color: #3d1b66;
+        margin-left: 0;
+        margin-right: auto;
+    }
+
+    .user-name {
+        font-weight: bold;
+        margin: 5px;
+        padding: 10px;
+        font-size: 14px;
+        border: 2px solid black;
+        border-radius: 10px;
+        background-color: #fff;
+        color: black;
+    }
+
+    .message-text {
+        margin: auto 5px;
+        font-size: 16px;
+    }
+
+    @keyframes fadeIn {
+        0% {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    #rooms {
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+    #user_chat {
+        transition: all 0.3s ease-in-out;
+    }
+
+    #user_chat:hover{
+        transform: scale(1.3);
+        color: red;
+    }
+
+    .room_card {
+        border-radius: 8px;
+    }
+
+    /* Add styles for the container that holds the cards */
+    .rooms-container {
+        position: relative;
+        top: 0px;
+        max-height: 90%;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+
+    /* Optionally, you can customize the scrollbar appearance */
+    .rooms-container::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .rooms-container::-webkit-scrollbar-thumb {
+        background-color: blueviolet;
+        border-radius: 10px;
+    }
+
+    .rooms-container::-webkit-scrollbar-track {
+        background-color: rgba(0, 0, 0, 0.1);
+    }
+
+    /* Styling for each card */
+    .card {
+        background: url({% static 'roomcardbg3.jpg' %}) no-repeat center center / cover;
+        color: #fff;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        margin: 10px 0;
+        backdrop-filter: blur(5px);
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-body {
+        flex-grow: 1;
+    }
+
+    .card-img-top {
+        border-radius: 50%;
+        border: 2px solid white;
+    }
+
+    /* Styling for the room name */
+    .card-text {
+        font-weight: bold;
+        color: #fff;
+    }
+
+    .unread-count {
+        background-color: red;
+        margin: auto;
+        padding: 5px;
+        border-radius: 50%;
+        font-size: 8px;
+    }
+
+
+    /* Styling for chat input form */
+    #form {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    #message {
+        width: 100%;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+    }
+
+    button {
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: none;
+        background-color: #28a745;
+        color: #fff;
+    }
+
+    /* Add responsiveness for smaller screens */
+    @media (max-width: 768px) {
+        .content_holder {
+            flex-direction: column;
+        }
+
+        #chat_section,
+        #rooms {
+            width: 100%;
+            height: 700px;
+        }
+    }
+</style>
+{% if user.is_authenticated %}
+<section id="main-section">
+    <div class="content_holder">
+        <div id="rooms" class="col-md-3">
+            <div class="heading d-flex justify-content-between align-items-center">
+                <h2 style="color: blueviolet; font-weight: bold;">Rooms</h2>
+                <a id="user_chat" href="{% url 'userchat' %}" style="margin: 10px;color: blueviolet;text-decoration: none;font-size: large;"><i class="fa-solid fa-user"></i></a>
+            </div>
+
+            <!-- Display chat rooms here -->
+            {% if rooms %}
+            <div class="rooms-container">
+                {% for room in rooms %}
+                {% if room.roomtype == 'group' %}
+                <div class="room_card" onclick="fetchRoom('{{ room.slug }}')">
+                    <div class="card" style="width: 100%; flex-direction: row; align-items: center; margin: 5px;">
+                        <img src="{{ room.logo }}"
+                            style="height: 60px;width: 60px; margin: 10px; border-radius: 50%; border: 2px solid white;"
+                            class="card-img-top" alt="{{ room.name }}">
+                        <div class="card-body">
+                            <p class="card-text" style="font-weight: bold;">{{room.name}}</p>
+                        </div>
+                        <div>
+                            <!-- Unread Message Count -->
+                            <span id="unread-count-{{ room.slug }}"></span>
+                            <!-- Dynamic unread count -->
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>No rooms available.</p>
+            {% endif %}
+        </div>
+        <div id="chat_section" class="col-md-9">
+            <!-- roomname & online user count -->
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 id="room_name" style="color: blueviolet; font-weight: bold;"></h2>
+                <h3 style="color: blueviolet;font-size: medium;">Online Users:<span id="online-users-count">0</span>
+                </h3>
+            </div>
+            <!-- Input field and send button -->
+            <form action="" id="form" style="display: none;">
+                <input type="text" name="message" id="message" placeholder="Enter your message">
+                <button class="btn" style="background-color: blueviolet;color: white;" type="submit">Send</button>
+            </form>
+
+            <!-- Display chat messages -->
+            <div id="chat-log">
+                <h3 style="color: blueviolet;font-weight: bold;">All Chat</h3>
+                <!-- Display chat messages here -->
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    // JavaScript to establish WebSocket connection on login (for unread counts of the logged-in user)
+    const protocol_global = window.location.protocol === "https:" ? "wss" : "ws";
+    const url_global = `${protocol_global}://${window.location.host}/ws/global-unread/`;
+    const global_socket = new WebSocket(url_global);
+
+    global_socket.onmessage = function (event) {
+        const data = JSON.parse(event.data);
+        console.log('global data', data);
+
+        if (data.type === 'unread_counts') {
+            // Update the unread message counts for each room the logged-in user is a member of
+            updateUnreadCounts(data.unread_counts);
+        }
+    };
+
+    // Function to update unread counts
+    function updateUnreadCounts(counts) {
+        for (const roomSlug in counts) {
+            const unreadCount = counts[roomSlug][`{{ user.username }}`] || 0;
+
+            // Update the unread count display for the logged-in user in each room
+            const unreadCountElement = document.getElementById(`unread-count-${roomSlug}`);
+            if (unreadCountElement && unreadCount > 0) {
+                unreadCountElement.textContent = unreadCount > 0 ? `(${unreadCount})` : '';
+                unreadCountElement.classList.add('unread-count')
+            }
+        }
+    }
+
+
+
+    let socket;
+    // Open a new WebSocket connection for a given room
+    function openSocket(room_slug) {
+        const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+        const url = `${protocol}://${window.location.host}/ws/socket-server/${room_slug}/`;
+
+        // If a socket already exists, close it before opening a new one
+        if (socket) {
+            socket.close();
+        }
+
+        // Create a new WebSocket connection for the current room
+        socket = new WebSocket(url);
+
+        // Set up the message handler for the WebSocket connection
+        socket.onmessage = function (e) {
+            const message = JSON.parse(e.data);
+
+            // Handle connection success (update unread count and online users count)
+            if (message.type === 'connection_success') {
+                document.getElementById(`unread-count-${message.slug}`).textContent = message.unread_count['{{ user.username }}'];
+                document.getElementById('online-users-count').textContent = message.online_users_count;
+            }
+
+            // Handle receiving chat messages
+            if (message.type === 'chat') {
+                const global_socket = new WebSocket(url_global);
+                console.log('chat message received-', message);
+
+                const isCurrentUser = message.user === '{{ user.username }}';
+                const unreadCountElement = document.getElementById('unread-count-' + message.slug);
+
+                if (unreadCountElement) {
+                    unreadCountElement.innerText = `(${message.unread_count})`;
+                    console.log(`unread-count = (${message.unread_count})`);
+                }
+
+                // Insert the new message at the end of the chat log
+                document.getElementById('chat-log').insertAdjacentHTML('beforeend', `
+                <div class="chat-message ${isCurrentUser ? 'current-user' : 'other-user'}">
+                    <p class="user-name">${message.user}</p>
+                    <p class="message-text">${message.message}</p>
+                </div>
+            `);
+
+                // Scroll to the bottom of the chat log to show the latest message
+                const chatLog = document.getElementById('chat-log');
+                chatLog.scrollTop = chatLog.scrollHeight;
+            } else {
+                console.log('Non-chat message:', message);
+            }
+
+
+            // Update online user count (only when updated)
+            if (message.type === 'update_online_users') {
+                document.getElementById('online-users-count').textContent = message.online_users_count;
+            }
+        };
+
+        socket.onopen = function () {
+            console.log(`Connected to the room: ${room_slug}`);
+        };
+
+        socket.onerror = function (error) {
+            console.error("WebSocket Error:", error);
+        };
+
+        socket.onclose = function () {
+            console.log(`Connection to room ${room_slug} closed`);
+        };
+    }
+
+    // Store the current room slug dynamically when a room card is clicked
+    let currentRoomSlug = null;
+
+    function fetchRoom(room_slug) {
+        currentRoomSlug = room_slug;
+        console.log('roomslug name', room_slug);
+
+        // Open the WebSocket connection for the selected room
+        openSocket(room_slug);
+
+
+        // Fetch the chat log for the selected room
+        fetch(`room/${room_slug}/`)
+            .then(response => response.json())
+            .then(data => {
+                // display entire room details like room name, chat field, and messages container 
+                document.getElementById('room_name').textContent = data.room.name;
+                document.getElementById('form').style.display = 'flex';
+
+                // Clear the chat log before inserting new messages
+                document.getElementById('chat-log').innerHTML = '';
+
+                // Insert the new messages at the end of the chat log
+                if (data.messages.length > 0) {
+                    data.messages.forEach(message => {
+                        const isCurrentUser = message.user === '{{ user.username }}';
+                        document.getElementById('chat-log').insertAdjacentHTML('beforeend', `
+                    <div class="chat-message ${isCurrentUser ? 'current-user' : 'other-user'}">
+                        <p class="user-name">${message.user}</p>
+                        <p class="message-text">${message.message}</p>
+                    </div>
+                `);
+                    });
+                    // Scroll to the bottom of the chat log to show the latest message
+                    const chatLog = document.getElementById('chat-log');
+                    chatLog.scrollTop = chatLog.scrollHeight;
+                }
+                else {
+                    document.getElementById('chat-log').innerHTML = `<p class="message-text">No Messages</p>`
+                }
+
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    // send messages to the server using websockets================================================================
+    let form = document.getElementById('form');
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const message = e.target.message.value;
+
+        if (!currentRoomSlug) {
+            alert('Please select a room first!');
+            return;
+        }
+
+        // Send the message to the WebSocket server for the selected room
+        socket.send(JSON.stringify({
+            'message': message,
+            'user': '{{ user.username }}',
+            'slug': currentRoomSlug,
+        }));
+
+        // Clear the message input field
+        document.getElementById('message').value = '';
+    });
+
+
+</script>
+{% else %}
+<p>You are not logged in</p>
+<p><a href="{% url 'password_reset' %}">Password Reset</a></p>
+<a href="{% url 'login' %}">Log In</a>
+{% endif %}
+{% endblock %}

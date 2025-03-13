@@ -1,0 +1,257 @@
+<!-- templates/adminpanel.html-->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Admin Panel{% endblock %}
+
+{% block content %}
+<style>
+    body {
+        background: url({% static 'chatbg2.jpg' %}) no-repeat center center / cover;
+        color: #fff;
+        height: 100vh;
+    }
+
+    #main-section {
+        padding: 20px;
+        background: none;
+        border-radius: 10px;
+        width: 100%;
+        /* height: 80vh; */
+        margin: 0 auto;
+
+    }
+
+    .content_holder {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        height: 500px;
+        gap: 10px;
+    }
+
+    .card {
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    .card-img-top {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .card-text{
+        font-size: small;
+    }
+</style>
+{% if user.is_authenticated %}
+<section id="main-section">
+    <div class="content_holder">
+        <div class="heading_userlist d-flex justify-content-between">
+            <h4 style="color: blueviolet;">UserList Page....</h4>
+            <button class="btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight"
+                aria-controls="offcanvasRight" style="font-size: small;background-color: blueviolet;"><i
+                    class="fa-solid fa-user-group"></i></button>
+        </div>
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasRight" aria-labelledby="offcanvasRightLabel">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title" id="offcanvasRightLabel" style="color: blueviolet;">Friend Requests!</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body py-0">
+                <!-- Received Friend Requests Section -->
+                <h6>Received Friend Requests</h6>
+                <div class="row" style="height: 40vh;border: 2px solid black;border-radius: 10px;overflow-y: auto;">
+                    {% if received_requests %}
+                    {% for request in received_requests %}
+                    <div class="col-md-12" style="height: fit-content;">
+                        <div class="card">
+                            <div class="card-body d-flex align-items-center justify-content-between p-0">
+                                <img src="{{ request.sender_profile_picture }}"
+                                    style="height: 60px;width: 60px; margin: 10px; border-radius: 50%; border: 2px solid white;"
+                                    class="card-img-top" alt="{{ request.sender_username }}">
+                                <h6 class="card-title">{{ request.sender_username }}</h6>
+                                <div class="forms_element d-flex p-2">
+                                    <!-- Accept Button -->
+                                    <button type="button" class="btn btn-success accept-btn" 
+                                            style="border-radius: 50%;" 
+                                            data-request-id="{{ request.id }}">
+                                        &#x2713; <!-- Checkmark for Accept -->
+                                    </button>
+                                
+                                    <!-- Reject Button -->
+                                    <button type="button" class="btn btn-danger reject-btn" 
+                                            style="border-radius: 50%;" 
+                                            data-request-id="{{ request.id }}">
+                                        &#x2717; <!-- Cross for Reject -->
+                                    </button>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p>No received friend requests.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Sent Friend Requests Section -->
+                <h6>Sent Friend Requests</h6>
+                <div class="row" style="height: 40vh;border: 2px solid black;border-radius: 10px;overflow-y: auto;">
+                    {% if sent_requests %}
+                    {% for request in sent_requests %}
+                    <div class="col-md-12" style="height: fit-content;">
+                        <div class="card mb-3 d-flex flex-row align-items-center justify-content-between">
+                            <div class="card-body d-flex align-items-center p-0">
+                                <img src="{{ request.recipient_profile_picture }}"
+                                    style="height: 60px;width: 60px; margin: 10px; border-radius: 50%; border: 2px solid white;"
+                                    class="card-img-top" alt="{{ request.recipient_username }}">
+                                <h6 class="card-title">{{ request.recipient_username }}</h6>
+                            </div>
+                            <p class="card-text p-2" style="color: red;">{% if request.status == 'pending' %} Pending {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p>No sent friend requests.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+
+        <div class="container-fluid mt-4">
+            <div class="row">
+                {% for user in non_friend_profiles %}
+                <div class="col-md-3 mb-4">
+                    <div class="card d-flex flex-column justify-content-center align-items-center"
+                        data-user-id="{{ user.user.id }}">
+                        <img src="{{ user.profile_picture }}" class="card-img-top" alt="Profile Picture">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ user.user.username }}</h5>
+                            <p class="card-text">{{ user.bio }}</p>
+                            <p class="card-text"><strong>Email:</strong> {{ user.user.email }}</p>
+                            <form class="addFriendForm justify-content-center align-items-center">
+                                {% csrf_token %}
+                                <input type="hidden" name="user1" value="{{ request.user.id }}">
+                                <input type="hidden" name="user2" value="{{ user.user.id }}">
+                                <button type="submit" id="add_friend_{{ user.user.id }}" class="btn"
+                                    style="font-size: x-small;background-color: blueviolet;">Add Friend</button>
+                                <span id="friend_request_{{ user.user.id }}" style="display:none; color:  green;">Friend
+                                    Request sent!</span>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+<script>
+
+    // This function to send friend requests.================================================================
+document.querySelectorAll(".addFriendForm").forEach(form => {
+    form.addEventListener("submit", function (event) {
+        event.preventDefault(); // Prevent default form submission
+
+        const formData = new FormData(this); // Get the form data
+
+        fetch("{% url 'send_friend_request' %}", {
+            method: "POST",
+            body: formData, // Send form data as the request body
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Optionally, hide the card of the added friend
+                const userId = formData.get('user2'); // Get the user2 ID from the form data
+                const friendCard = document.querySelector(`.card[data-user-id='${userId}']`);
+                console.log(friendCard);
+
+                const addFriendButton = friendCard.querySelector(`#add_friend_${userId}`);
+                const friendsSpan = friendCard.querySelector(`#friend_request_${userId}`);
+
+                // If the button and span exist, hide the button and show the "Friends" span
+                if (addFriendButton && friendsSpan) {
+                    addFriendButton.style.display = 'none';  // Hide the "Add Friend" button
+                    friendsSpan.style.display = 'flex';  // Show the "Friends" text
+                }
+                alert('Friend request sent successfully!');
+            } else {
+                // Handle case where user is already a friend
+                alert(data.error || 'Something went wrong');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+        });
+    });
+});
+
+
+    // This event listner is to accept/reject friend requests.===========================================================
+    // Add event listeners for both the accept and reject buttons
+document.querySelectorAll('.accept-btn, .reject-btn').forEach(button => {
+    button.addEventListener('click', function (event) {
+        const requestId = event.target.getAttribute('data-request-id');
+        const action = event.target.classList.contains('accept-btn') ? 'accept' : 'reject';
+
+        // Build the URL dynamically based on the action
+        let url;
+        if (action === 'accept') {
+            url = '{% url "accept_friend_request" %}';
+        } else if (action === 'reject') {
+            url = '{% url "reject_friend_request" %}';
+        }
+
+        // Prepare the payload
+        const payload = {
+            request_id: requestId
+        };
+
+        // Make the fetch request
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',  // Adding CSRF token manually
+            },
+            body: JSON.stringify(payload), // Sending the data as JSON
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Update UI after a successful operation
+                alert(`${action.charAt(0).toUpperCase() + action.slice(1)}ed the friend request successfully!`);
+
+                // You can remove the card or perform other UI updates
+                const requestCard = event.target.closest('.card'); // Find the closest card element
+                if (requestCard) {
+                    requestCard.remove(); // Or hide the card, or change its state
+                }
+            } else {
+                alert('Something went wrong. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+        });
+    });
+});
+
+
+</script>
+{% else %}
+<p>You are not logged in</p>
+<p><a href="{% url 'password_reset' %}">Password Reset</a></p>
+<a href="{% url 'login' %}">Log In</a>
+{% endif %}
+{% endblock %}

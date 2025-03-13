@@ -1,0 +1,292 @@
+<!-- templates/adminpanel.html-->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Admin Panel{% endblock %}
+
+{% block content %}
+<style>
+    body {
+        background: url({% static 'chatbg2.jpg' %}) no-repeat center center / cover;
+        color: #fff;
+        height: 100vh;
+    }
+
+    #main-section {
+        position: relative;
+        top: 100px;
+        left: 0;
+        padding: 20px;
+        background: none;
+        border-radius: 10px;
+        width: 100%;
+        /* height: 80vh; */
+        margin: 0 auto;
+
+    }
+
+    .content_holder {
+        display: flex;
+        justify-content: center;
+        height: 500px;
+        gap: 10px;
+    }
+
+
+    #chat_section {
+        width: 70%;
+        /* Occupy 70% of the space */
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: none;
+    }
+
+    /* ====================================admin controls section css===================================== */
+    #admin_control_options {
+
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        background-color: rgba(0, 0, 0, 0.05);
+        /* Slight background color */
+    }
+
+    /* Add styles for the container that holds the cards */
+    .admin_control_container {
+        margin: auto;
+        max-height: 90%;
+        /* Set a max height for the scrolling container */
+        overflow-y: auto;
+        /* Enable vertical scrolling when the content exceeds the max height */
+        padding-right: 20px;
+        /* Add some space on the right for the scrollbar */
+    }
+
+    .admin_control_container li {
+        list-style: none;
+        /* text-align: center; */
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.1s ease;
+    }
+
+    .admin_control_container li:hover {
+        background-color: blueviolet;
+        /* Blue-purple background */
+        color: black;
+        /* Change text color on hover */
+        transform: scale(1.05);
+        /* Slightly scale up on hover */
+        font-weight: bold;
+        /* Make the text bold */
+    }
+
+    /* Active state styles for the clicked list item */
+    .admin_control_container li.active {
+        background-color: blueviolet;
+        /* Highlight color */
+        font-weight: bold;
+        /* Bold text */
+        transform: scale(1.05);
+        /* Slight scaling */
+        color: black;
+        /* Text color when highlighted */
+    }
+
+    /* Optionally, you can customize the scrollbar appearance */
+    .rooms-container::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .rooms-container::-webkit-scrollbar-thumb {
+        background-color: blueviolet;
+        border-radius: 10px;
+    }
+
+    .rooms-container::-webkit-scrollbar-track {
+        background-color: rgba(0, 0, 0, 0.1);
+    }
+
+    #admin_control_forms {
+
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: none;
+    }
+
+    .fa-solid {
+        font-size: 1.5em;
+        margin-right: 5px;
+    }
+</style>
+{% if user.is_authenticated %}
+<section id="main-section">
+    <div class="content_holder">
+        <div id="admin_control_options" class="col-md-3">
+            <h4 style="color: blueviolet; font-weight: bold;text-align: center;">Admin Controls</h4>
+            <ul class="admin_control_container">
+                <li id="createroom-tab" onclick="fetchForm('createroom', this)">
+                    <i class="fa-solid fa-house-medical"></i> Create Room
+                </li>
+                <li id="deleteroom-tab" onclick="fetchForm('deleteroom', this)">
+                    <i class="fa-solid fa-house-medical-circle-xmark"></i> Delete Room
+                </li>
+                <li id="manageroomaccess-tab" onclick="fetchForm('manageroomaccess', this)">
+                    <i class="fa-solid fa-screwdriver-wrench"></i> Manage Room Access
+                </li>
+                <li id="removeuser-tab" onclick="fetchForm('removeuser', this)">
+                    <i class="fa-solid fa-user-minus"></i> Remove User
+                </li>
+            </ul>
+        </div>
+        <div id="admin_control_forms" class="col-md-9">
+            <!-- initially display a comment to select any option -->
+            <h3 class="admin-form h-100 justify-content-center align-items-center"
+                style="display: flex;color: blueviolet;font-weight: bold;text-align: center;">Select an option to manage the chat rooms
+            </h3>
+
+            <!-- =========================Forms for admin controls page========================================= -->
+            <div id="createroom" class="admin-form flex-column" style="display: none;">
+                <!-- Content for Create Room -->
+                <h3>Create Room Form</h3>
+                <form id="createRoomForm" method="POST" enctype="multipart/form-data"
+                    onsubmit="handleFormSubmit(event, 'create_room')">
+                    {% csrf_token %}
+                    {{ create_room_form.as_p }}
+                    <button type="submit" name="create_room" class="btn btn-primary">Create Room</button>
+                </form>
+            </div>
+
+            <div id="deleteroom" class="admin-form flex-column" style="display: none;">
+                <!-- Content for Delete Room -->
+                <h3>Delete Room Form</h3>
+                <form id="deleteRoomForm" method="POST" class="d-flex flex-column"
+                    onsubmit="handleFormSubmit(event, 'delete_room')">
+                    {% csrf_token %}
+                    <label for="room_id">Select Room to Delete:</label>
+                    <select name="room_id">
+                        {% for room in rooms %}
+                        <option value="{{ room.id }}">{{ room.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" name="delete_room" class="btn btn-danger">Delete Room</button>
+                </form>
+            </div>
+
+            <div id="manageroomaccess" class="admin-form flex-column" style="display: none;">
+                <h3>Manage Room Access Form</h3>
+                <form id="manageRoomAccessForm" method="POST" class="d-flex flex-column" onsubmit="handleFormSubmit(event, 'add_remove_users')">
+                    {% csrf_token %}
+                    <!-- Room selection -->
+                    <label for="room_id">Select Room:</label>
+                    {{ user_room_form.room_id }}
+                    
+                    <!-- User selection -->
+                    <label for="users">Select Users:</label>
+                    {{ user_room_form.users }}
+                    
+                    <!-- Operation selection (Add/Remove) -->
+                    <label for="operation">Operation:</label>
+                    {{ user_room_form.operation }}
+                    
+                    <!-- Submit button (Add/Remove) -->
+                    <button type="submit" name="add_remove_users" class="btn btn-secondary">
+                        {{ user_room_form.operation.value|default:"Add/Remove Users" }}
+                    </button>
+                </form>
+            </div>
+            
+
+            <div id="removeuser" class="admin-form flex-column" style="display: none;">
+                <!-- Content for Remove User -->
+                <h3>Remove User Form</h3>
+                <form id="removeUserForm" method="POST" onsubmit="handleFormSubmit(event, 'remove_user')">
+                    {% csrf_token %}
+                    <div class="form-group mb-3">
+                        <label for="username" class="form-label">Username:</label>
+                        {{ remove_user_form.username }}
+                    </div>
+                    <button type="submit" name="remove_user" class="btn btn-danger">Remove User</button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- <script type="text/javascript">
+    // $(document).ready(function () {
+    //     $(".select2").select2();  // Initialize Select2
+    // });
+</script> -->
+<script>
+
+
+    // Function to handle the click event and display the respective form
+    function fetchForm(formName, clickedItem) {
+        // Hide all forms
+        const forms = document.querySelectorAll('.admin-form');
+        forms.forEach(form => {
+            form.style.display = 'none';
+        });
+
+        // Remove highlight from all menu items
+        const tabs = document.querySelectorAll('.admin_control_container li');
+        tabs.forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        // Show the selected form
+        const selectedForm = document.getElementById(formName);
+        if (selectedForm) {
+            selectedForm.style.display = 'flex';
+        }
+
+        // Add active class to the clicked item to highlight it
+        clickedItem.classList.add('active');
+    }
+
+    function handleFormSubmit(event, formType) {
+    event.preventDefault();  
+
+    const form = event.target;  
+    const formData = new FormData(form); 
+
+    // Add the formType to the FormData so that it can be identified in the backend
+    formData.append('formType', formType);
+
+    // Send the data using fetch
+    fetch('{% url "adminpanel" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name="csrfmiddlewaretoken"]').value,  // CSRF token
+        },
+        body: formData  
+    })
+    .then(response => response.json())  
+    .then(data => {
+        if (data.success) {
+            alert(data.message);  
+            window.location.reload();  
+        } else {
+            alert(data.message);  
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+
+
+</script>
+{% else %}
+<p>You are not logged in</p>
+<p><a href="{% url 'password_reset' %}">Password Reset</a></p>
+<a href="{% url 'login' %}">Log In</a>
+{% endif %}
+{% endblock %}
