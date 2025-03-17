@@ -39,14 +39,35 @@ class ChatConsumer(AsyncWebsocketConsumer):
         print('unread messages dict', unread_count_dict)
         print('online users list', list(CONNECTED_USERS[self.room_slug]),)
 
-        # Send the unread count as a JSON response
+
+        # Send the same message to all group members
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'connection_success',  # Message type (this will call the `connection_success` handler)
+                'slug': self.room_slug,
+                'unread_count_dict': unread_count_dict,  # Include unread count for all members
+                'unread_count': 0,
+                'online_users': list(CONNECTED_USERS[self.room_slug]),
+                'online_users_count': len(CONNECTED_USERS[self.room_slug])
+            }
+        )
+    
+    async def connection_success(self, event):
+        # This method will be called when the group_send message is received
+        unread_count_dict = event['unread_count_dict']
+        online_users = event['online_users']
+        online_users_count = event['online_users_count']
+        slug = event['slug']
+
+        # Send the message to the WebSocket (client)
         await self.send(text_data=json.dumps({
-            'type': 'connection_success',
-            'slug': self.room_slug,
-            'unread_count_dict': unread_count_dict,  # Awaited result of the function
-            'unread_count': 0,
-            'online_users': list(CONNECTED_USERS[self.room_slug]),
-            'online_users_count': len(CONNECTED_USERS[self.room_slug])
+            'type': 'connection_success',  # This should match the type sent in group_send
+            'slug': slug,
+            'unread_count_dict': unread_count_dict,
+            'unread_count': 0,  # You may modify this depending on your application
+            'online_users': online_users,
+            'online_users_count': online_users_count
         }))
 
     async def disconnect(self, close_code):
@@ -61,6 +82,21 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
+        )
+
+        # Ensure unread count is awaited before sending
+        unread_count_dict = await self.get_unread_count_for_all_disconnected_users(self.room_slug)
+
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'connection_success',  # Message type (this will call the `connection_success` handler)
+                'slug': self.room_slug,
+                'unread_count_dict': unread_count_dict,  # Include unread count for all members
+                'unread_count': 0,
+                'online_users': list(CONNECTED_USERS[self.room_slug]),
+                'online_users_count': len(CONNECTED_USERS[self.room_slug])
+            }
         )
 
     async def receive(self, text_data):
